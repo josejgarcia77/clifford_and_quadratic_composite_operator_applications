@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jun 29 14:41:08 2024
+
+@author: josejgarcia
+"""
+
+import numpy as np
+from matplotlib import pyplot as plt
+from haldane_model import haldane_positions
+
+if __name__ == '__main__':
+    # Routine to replot already computed plots with different display features
+    # and properties.
+    X, Y = haldane_positions(21,1)
+    x_diag = np.diag(X.toarray())
+    y_diag = np.diag(Y.toarray())
+    x_min = min(x_diag)-2
+    x_max = max(x_diag)+2
+    y_min = min(y_diag)-2
+    y_max = max(y_diag)+2
+    
+    folder_dir = "2024-06-30_10-45-48/"
+    base = "k0.5_x_var-y_var-reE0.00imE-1.00"
+    
+    npz_filename = folder_dir + base + ".npz"
+    
+    #npzfile = np.load("2024-06-29_10-10-15/k0.5_x_var-y_var-reE0.00imE0.00.npz")
+    npzfile = np.load(npz_filename)
+    
+    #filename_quad = "2024-06-29_10-10-15/quad_k0.5_x_var-y_var-reE0.00imE0.00.png"
+    #filename_linear = "2024-06-29_10-10-15/linear_k0.5_x_var-y_var-reE0.00imE0.00.png"
+    #filename_diff = "2024-06-29_10-10-15/diff_k0.5_x_var-y_var-reE0.00imE0.00.png"
+    
+    filename_quad = folder_dir + "quad_" + base + ".png"
+    filename_linear = folder_dir + "linear_" + base + ".png"
+    filename_diff = folder_dir + "diff_" + base + ".png"
+    
+    quad_data_matrix = npzfile['quad_gap_data']
+    linear_data_matrix = npzfile['linear_gap_data']
+    diff_data_matrix = npzfile['gap_diff_data']
+    
+    max_linear_scale = np.nanmax(linear_data_matrix)
+    max_quad_scale = np.nanmax(quad_data_matrix)
+    max_clim = max(max_linear_scale,max_quad_scale)
+    
+    min_linear_scale = np.nanmin(linear_data_matrix)
+    min_quad_scale = np.nanmin(quad_data_matrix)
+    min_clim = min(min_linear_scale,min_quad_scale)
+    
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['xtick.labelsize']=16
+    plt.rcParams['ytick.labelsize']=16
+    plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.imshow(quad_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
+    plt.colorbar()
+    plt.clim(min_clim,max_clim)
+    print(f"Saving Plot to {filename_quad}")
+    plt.savefig(filename_quad,dpi=300,bbox_inches='tight')
+    print(f"Saved Plot to {filename_quad}")
+    plt.clf()
+    
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['xtick.labelsize']=16
+    plt.rcParams['ytick.labelsize']=16
+    plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.imshow(linear_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
+    plt.colorbar()
+    plt.clim(min_clim,max_clim)
+    print(f"Saving Plot to {filename_linear}")
+    plt.savefig(filename_linear,dpi=300,bbox_inches='tight')
+    print(f"Saved Plot to {filename_linear}")
+    plt.clf()
+    
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['xtick.labelsize']=16
+    plt.rcParams['ytick.labelsize']=16
+    plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+    plt.imshow(diff_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
+    plt.colorbar()
+    print(f"Saving Plot to {filename_diff}")
+    plt.savefig(filename_diff,dpi=300,bbox_inches='tight')
+    print(f"Saved Plot to {filename_diff}")
+    plt.close()
+    
