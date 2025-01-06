@@ -3,6 +3,17 @@
 """
 Created on Sat Jun 29 14:41:08 2024
 
+Code used to generate the results in
+
+    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    arXiv:2410.03880. https://arxiv.org/abs/2410.03880
+
+Authors of Paper: Jose J. Garcia, Alexander Cerjan, and Terry Loring.
+
+Original code on github:
+    
+    https://github.com/josejgarcia77/clifford_and_quadratic_composite_operator_applications
+
 @author: josejgarcia
 """
 
