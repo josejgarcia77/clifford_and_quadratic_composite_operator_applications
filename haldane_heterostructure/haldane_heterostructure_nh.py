@@ -128,6 +128,73 @@ def clifford_comp(kappa,x,y,E,X,Y,H):
     
     return clifford_comp
 
+def clifford_comp_2(kappa,x,y,E,X,Y,H):
+    """
+    Generate the Clifford composite operator with tuning parameter kappa,
+    
+    position probe x, energy probe E, position observable X and non-Hermitian
+    
+    Hamiltonian H.
+    
+    Note: in this operator is refered to as the non-Hermitian spectral
+    
+    localizer in both the papers Cerjan, Koekenbier, Shulz-Baldes (2023) and
+    
+    Cerjan, Loring (2024). While in the paper by Garcia, Cerjan, Loring(2024)
+    
+    it is known as the Clifford composite operator.
+
+    Parameters
+    ----------
+    kappa : float
+        Tuning parameter for Clifford composite operator
+    x : float
+        X Position probe site.
+    y : float
+        Y Position probe site. 
+    E : complex
+        Complex 'energy' probe site.
+    X : scipy.sparse.lil_array
+        X Position observable.
+    Y : scipy.sparse.lil_array
+        Y Position observable.
+    H : scipy.sparse.lil_array
+        Hamiltonian for Haldane heterostructure.
+
+    Returns
+    -------
+    L : scipy.sparse.lil_array
+        Clifford composite operator.
+        
+    References
+    ----------
+    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    arXiv:2410.03880. https://arxiv.org/abs/2410.03880
+    
+    Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
+    *APL Photonics*, *9*(11). https://doi.org/10.1063/5.0239018
+    
+    Cerjan, A., Koekenbier, L., & Schulz-Baldes, H. (2023). Spectral localizer for line-gapped non-Hermitian systems. 
+    *Journal of Mathematical Physics*, *64*(8), 082102. https://doi.org/10.1063/5.0150995
+    """
+    
+    N = len(X.toarray())
+    clifford_comp_arr = np.zeros((2*N,2*N),dtype='complex')
+    id_matrix_arr = np.identity(N,dtype='complex')
+    
+    x_diff = X-x*id_matrix_arr
+    y_diff = Y-y*id_matrix_arr
+    E_diff = H-E*id_matrix_arr
+    
+    clifford_comp_arr[0:N,0:N] = (E_diff)
+    clifford_comp_arr[N:2*N,N:2*N] = -(E_diff)
+    clifford_comp_arr[0:N,N:2*N] = kappa*(x_diff - complex(0,1)*y_diff)
+    clifford_comp_arr[N:2*N,0:N] = kappa*(x_diff + complex(0,1)*y_diff)
+    
+    clifford_comp = sp.sparse.lil_array(clifford_comp_arr)
+    
+    return clifford_comp
+
 def m_operator(kappa,x,y,E,X,Y,H):
     """
     Generate the M operator defined in the paper by Garcia, Cerjan and Loring
@@ -366,8 +433,12 @@ def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2
         #plot position and output quad gap
         for x_ind, x in enumerate(np.linspace(x_min,x_max,num=m,endpoint=True)):
             for y_ind, y in enumerate(np.linspace(y_min,y_max,num=m,endpoint=True)):
-                M = m_operator(kappa, x, y, complex(reE_fixed,imE_fixed), X, Y, H)
-                quad_gap, _ = quadratic_gap(M)
+                M_RQ = m_operator(kappa, x, y, complex(reE_fixed,imE_fixed), X, Y, H)
+                quad_r_gap, _ = quadratic_gap(M_RQ)
+                M_LQ = m_operator(kappa, x, y, complex(reE_fixed,-imE_fixed), X, Y, sp.sparse.lil_array.transpose(sp.sparse.lil_array.conj(H)))
+                quad_l_gap, _ = quadratic_gap(M_LQ)
+                quad_gap = min(quad_r_gap,quad_l_gap)
+                
                 quad_data_matrix[y_ind,x_ind] = quad_gap
                 
                 L = clifford_comp(kappa, x, y, complex(reE_fixed,imE_fixed), X, Y, H)
@@ -461,6 +532,113 @@ def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2
         
         return True
     
+def plot_spectra(X,Y,H):
+    N = X.shape[0]
+    x_max = max(np.diag(X.toarray()))
+    x_mid = x_max/2
+    num_to_comp = N-1
+    kappa = 0.1
+    x=x_mid
+    y=0
+    E= complex(0,0)
+    L_1 = clifford_comp(kappa, x, y, E, X, Y, H)
+    L_2= clifford_comp_2(kappa, x, y, E, X, Y, H)
+    eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='SM', return_eigenvectors=False)
+    eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='SM', return_eigenvectors=False)
+    
+    ev_1_real = []
+    ev_1_imag = []
+    ev_2_real = []
+    ev_2_imag = []
+    for val in eig_vals_1:
+        ev_1_real.append(val.real)
+        ev_1_imag.append(val.imag)
+        
+    for val in eig_vals_2:
+        ev_2_real.append(val.real)
+        ev_2_imag.append(val.imag)
+    #difference = np.abs(eig_vals_1 - eig_vals_2)
+    
+    plt.figure(1)
+    plt.scatter(ev_1_real,ev_1_imag,label="original")
+    plt.legend()
+    plt.show()
+    plt.figure(2)
+    plt.scatter(ev_2_real,ev_2_imag,label="proposed")
+    plt.legend()
+    plt.show()
+    
+    #plt.scatter(range(0,len(difference)),[val for val in difference],label="difference")
+    #plt.legend()
+    return True
+
+def plot_spectra_H(H):
+    num = X.shape[0]-2
+    eig_vals_1 = sp.sparse.linalg.eigs(H,k=num,which='SM',return_eigenvectors=False)
+    
+    plt.scatter([val.real for val in eig_vals_1],[val.imag for val in eig_vals_1])
+    
+    return True
+
+def compare_gaps(X,Y,H):
+    x_min = min(np.diag(X.toarray()))
+    x_max = max(np.diag(X.toarray()))
+    y_min = min(np.diag(Y.toarray()))
+    y_max = max(np.diag(Y.toarray()))
+    r_e_min = -1
+    r_e_max = 1
+    c_e_min = -1
+    c_e_max = 1
+    #N = X.shape[0]
+    #num_to_comp = int(np.ceil(N/2))
+    #num_to_comp_comp = N-num_to_comp
+    kappa = 0.1
+    #x=0
+    #y=0
+    E= complex(0,0)
+    num = 50
+    gap_diff = np.zeros((num,num))
+    
+    """
+    for i, x in enumerate(np.linspace(x_min,x_max,num=num)):
+        for j, y in enumerate(np.linspace(y_min,y_max,num=num)):
+            L_1 = clifford_comp(kappa, x, y, E, X, Y, H)
+            L_2= clifford_comp_2(kappa, x, y, E, X, Y, H)
+            #eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='LM', return_eigenvectors=False)
+            #eig_vals_1 = eig_vals_1 + sp.sparse.linalg.eigs(L_1,k=num_to_comp_comp,which="SM", return_eigenvectors=False)
+            #eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='LM', return_eigenvectors=False)
+            #eig_vals_2 = eig_vals_2 + sp.sparse.linalg.eigs(L_2, k=num_to_comp_comp,which='SM', return_eigenvectors=False)
+    
+            sing_vals_1 = sp.sparse.linalg.svds(L_1,k=1,which='SM', return_singular_vectors=False)
+            sing_vals_2 = sp.sparse.linalg.svds(L_2,k=1,which='SM', return_singular_vectors=False)
+    
+            gap_1 = sing_vals_1[0]
+            gap_2 = sing_vals_2[0]
+    
+            gap_diff[i,j] = np.abs(gap_1-gap_2)
+            """
+            
+    for i, re_E in enumerate(np.linspace(r_e_min, r_e_max,num=num)):
+        for j, im_E in enumerate(np.linspace(c_e_min, c_e_max,num=num)):
+            L_1 = clifford_comp(kappa, 100, 100, complex(re_E,im_E), X, Y, H)
+            L_2= clifford_comp_2(kappa, 100, 100, complex(re_E,im_E), X, Y, H)
+            #eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='LM', return_eigenvectors=False)
+            #eig_vals_1 = eig_vals_1 + sp.sparse.linalg.eigs(L_1,k=num_to_comp_comp,which="SM", return_eigenvectors=False)
+            #eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='LM', return_eigenvectors=False)
+            #eig_vals_2 = eig_vals_2 + sp.sparse.linalg.eigs(L_2, k=num_to_comp_comp,which='SM', return_eigenvectors=False)
+    
+            sing_vals_1 = sp.sparse.linalg.svds(L_1,k=1,which='SM', return_singular_vectors=False)
+            sing_vals_2 = sp.sparse.linalg.svds(L_2,k=1,which='SM', return_singular_vectors=False)
+    
+            gap_1 = sing_vals_1[0]
+            gap_2 = sing_vals_2[0]
+    
+            gap_diff[i,j] = np.abs(gap_1-gap_2)
+    
+    plt.imshow(gap_diff)
+    
+    return True
+    
 if __name__ == '__main__':
     
     folder_date = str(datetime.datetime.now()).replace(" ", "_")
@@ -471,6 +649,10 @@ if __name__ == '__main__':
         os.makedirs(newpath)
     
     X,Y,H = generate_system()
+    
+    #plot_spectra_H(H)
+    #plot_spectra(X, Y, H)
+    #compare_gaps(X,Y,H)
     
     kappa = 0.5
     for E in [complex(-1,0),complex(0,-1)]:

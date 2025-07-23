@@ -253,11 +253,6 @@ def m_operator(kappa,x,E,X,H):
     M[2:4,0:2] = (H-E*np.identity(2))
     
     return M
-    M = np.zeros((4,2),dtype='complex')
-    M[0:2,0:2] = kappa*(X-x*np.identity(2))
-    M[2:4,0:2] = (H-E*np.identity(2))
-    
-    return M
 
 def clifford_gap(L,quantity=1):
     """
@@ -329,7 +324,7 @@ def clifford_gap(L,quantity=1):
         gap_vector = vects[gap_index,:]
     else:
         _, singvals, vects = sp.linalg.svd(L,full_matrices=False,)
-        gap = min(singvals[0],singvals[1])
+        gap = min(singvals)
         np_list = list(singvals)
         gap_index = np_list.index(gap)
         gap_vector = np.conj(vects[gap_index,:])
@@ -463,8 +458,8 @@ def plot_gaps(kappa,fixed_dim_input,X,H,filenames,output_coord = (2,3), m=100):
     imE_fixed = fixed_dim_input[2]
     
     x_input = np.linspace(-1,1,num=m,endpoint=True)
-    reE_input = np.linspace(-10,10,num=m,endpoint=True)
-    imE_input = np.linspace(-10,10,num=m,endpoint=True)
+    reE_input = np.linspace(-3,3,num=m,endpoint=True)
+    imE_input = np.linspace(-3,3,num=m,endpoint=True)
     
     plt.rcParams['text.usetex'] = True
     plt.rcParams['xtick.labelsize']=16
@@ -650,8 +645,12 @@ def plot_gaps(kappa,fixed_dim_input,X,H,filenames,output_coord = (2,3), m=100):
         for x_ind, reE in enumerate(reE_input):
             for y_ind, imE in enumerate(imE_input):
                 if ('q' in outputs) or ('lq'in outputs) or ('rq' in outputs):
-                    M = m_operator(kappa, x_fixed , complex(reE,imE), X, H)
-                    quad_gap, _ = quadratic_gap(M)
+                    M_RQ = m_operator(kappa, x_fixed , complex(reE,imE), X, H)
+                    M_LQ = m_operator(kappa, x_fixed , complex(reE,-imE),X,np.transpose(np.conj(H)))
+                    quad_r_gap, _ = quadratic_gap(M_RQ)
+                    quad_l_gap, _ = quadratic_gap(M_LQ)
+                    
+                    quad_gap = min(quad_r_gap,quad_l_gap)
                 
                 if ('l' in outputs) or ('lq'in outputs) or ('lr' in outputs):
                     L = clifford_comp(kappa, x_fixed , complex(reE,imE), X, H)
@@ -675,59 +674,62 @@ def plot_gaps(kappa,fixed_dim_input,X,H,filenames,output_coord = (2,3), m=100):
                     r_data_matrix[y_ind,x_ind] = radial_gap
         
         single_max = max(np.max(q_data_matrix),np.max(l_data_matrix),np.max(r_data_matrix))
+        single_min = min(np.min(q_data_matrix),np.min(l_data_matrix),np.min(r_data_matrix))
         diff_max = max(np.max(lq_diff_data_matrix),np.max(lr_diff_data_matrix),np.max(rq_diff_data_matrix))
+        diff_min = min(np.min(lq_diff_data_matrix),np.min(lr_diff_data_matrix),np.min(rq_diff_data_matrix))
+        extents = (-3,3,-3,3)
         
         if 'lq' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(lq_diff_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,diff_max)
+            plt.imshow(lq_diff_data_matrix,cmap='viridis',vmin=diff_min,vmax=diff_max, origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,diff_max)
             plt.colorbar()
             plt.savefig(filenames['lq'],bbox_inches='tight')
             plt.clf()
         if 'lr' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(lr_diff_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,diff_max)
+            plt.imshow(lr_diff_data_matrix,cmap='viridis',vmin=diff_min,vmax=diff_max,origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,diff_max)
             plt.colorbar()
             plt.savefig(filenames['lr'],bbox_inches='tight')
             plt.clf()
         if 'rq' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(rq_diff_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,diff_max)
+            plt.imshow(rq_diff_data_matrix,cmap='viridis',vmin=diff_min,vmax=diff_max,origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,diff_max)
             plt.colorbar()
             plt.savefig(filenames['rq'],bbox_inches='tight')
             plt.clf()
         if 'q' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(q_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,single_max)
+            plt.imshow(q_data_matrix,cmap='viridis',vmin=single_min,vmax=single_max,origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,single_max)
             plt.colorbar()
             plt.savefig(filenames['q'],bbox_inches='tight')
             plt.clf()
         if 'l' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(l_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,single_max)
+            plt.imshow(l_data_matrix,cmap='viridis',vmin=single_min,vmax=single_max,origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,single_max)
             plt.colorbar()
             plt.savefig(filenames['l'],bbox_inches='tight')
             plt.clf()
         if 'r' in outputs:
-            extents = (-10,10, -10,10)
+            #extents = (-10,10, -10,10)
             plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
             plt.ylabel('Im$(E)$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-            plt.imshow(r_data_matrix,cmap='viridis',origin='lower',extent=extents,aspect='auto')
-            plt.clim(0,single_max)
+            plt.imshow(r_data_matrix,cmap='viridis',vmin=single_min,vmax=single_max,origin='lower',extent=extents,aspect='auto')
+            #plt.clim(0,single_max)
             plt.colorbar()
             plt.savefig(filenames['r'],bbox_inches='tight')
             plt.clf()
