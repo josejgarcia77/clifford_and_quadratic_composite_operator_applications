@@ -17,12 +17,14 @@ Original code on github:
 @author: josejgarcia
 """
 
-from haldane_model import haldane_hamiltonian, haldane_positions
+from mpi4py import MPI
 import numpy as np
-import scipy as sp
+from haldane_model import haldane_hamiltonian, haldane_positions
+import scipy.sparse as sp
 import datetime
 import matplotlib.pyplot as plt
 import os
+import sys
 
 f_mach_prec = np.finfo(float).eps
 
@@ -347,7 +349,8 @@ def quadratic_gap(M):
     
     return quad_gap[0], np.conj(gap_vector[0])
     
-def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2), m=100):
+    
+def parallel_gap_calculation(kappa, fixed_dim_input, X, Y, H, m=100):
     """
     Compute and plot the various gap functions and their differences, the plots
     
@@ -404,269 +407,101 @@ def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2
     Cerjan, A., Koekenbier, L., & Schulz-Baldes, H. (2023). Spectral localizer for line-gapped non-Hermitian systems. 
     *Journal of Mathematical Physics*, *64*(8), 082102. https://doi.org/10.1063/5.0150995
     """
+    """Parallel computation of gap data using MPI"""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
     
-    # Plot the gap as a function of two variables (x,y), (x,reE), (x,imE), (y,reE),
-    # (y,imE), or (reE,imE).
-    
-    quad_data_matrix = np.zeros((m,m))
-    linear_data_matrix = np.zeros((m,m))
-    diff_data_matrix = np.zeros((m,m))
-    vector_data = {}
-    
+    # Create grid points (all ranks)
     x_diag = np.diag(X.toarray())
     y_diag = np.diag(Y.toarray())
-    x_min = min(x_diag)-2
-    x_max = max(x_diag)+2
-    y_min = min(y_diag)-2
-    y_max = max(y_diag)+2
+    x_min, x_max = min(x_diag)-2, max(x_diag)+2
+    y_min, y_max = min(y_diag)-2, max(y_diag)+2
+    x_points = np.linspace(x_min, x_max, m)
+    y_points = np.linspace(y_min, y_max, m)
     
-    percentage_complete = 0
-    previous_percent = 0
+    # Initialize result matrices
+    quad_data = np.zeros((m, m))
+    linear_data = np.zeros((m, m))
+    diff_data = np.zeros((m, m))
     
-    x_fixed = fixed_dim_input[0]
-    y_fixed = fixed_dim_input[1]
-    reE_fixed = fixed_dim_input[2]
-    imE_fixed = fixed_dim_input[3]
+    # Distribute work
+    total_points = m * m
+    chunk_size = total_points // size
+    remainder = total_points % size
     
-    if output_coord == (1,2):
-        print("Starting Computation of Data Points")
-        #plot position and output quad gap
-        for x_ind, x in enumerate(np.linspace(x_min,x_max,num=m,endpoint=True)):
-            for y_ind, y in enumerate(np.linspace(y_min,y_max,num=m,endpoint=True)):
-                M_RQ = m_operator(kappa, x, y, complex(reE_fixed,imE_fixed), X, Y, H)
-                quad_r_gap, _ = quadratic_gap(M_RQ)
-                M_LQ = m_operator(kappa, x, y, complex(reE_fixed,-imE_fixed), X, Y, sp.sparse.lil_array.transpose(sp.sparse.lil_array.conj(H)))
-                quad_l_gap, _ = quadratic_gap(M_LQ)
-                quad_gap = min(quad_r_gap,quad_l_gap)
-                
-                quad_data_matrix[y_ind,x_ind] = quad_gap
-                
-                L = clifford_comp(kappa, x, y, complex(reE_fixed,imE_fixed), X, Y, H)
-                linear_gap, _ = clifford_linear_gap(L)
-                linear_data_matrix[y_ind,x_ind] = linear_gap
-                
-                diff_data_matrix[y_ind,x_ind] = np.abs(linear_gap-quad_gap)
-                percentage_complete += 1/(m*m)
-            
-                if percentage_complete > previous_percent:
-                    print(f"Computation of Plot Data Points: {percentage_complete:0.0%} Complete")
-                    previous_percent += 0.1
-        
-        np.savez(filenames['save'],quad_gap_data=quad_data_matrix, linear_gap_data=linear_data_matrix, gap_diff_data=diff_data_matrix)
-        
-        max_linear_scale = np.nanmax(linear_data_matrix)
-        max_quad_scale = np.nanmax(quad_data_matrix)
-        max_clim = max(max_linear_scale,max_quad_scale)
-        
-        min_linear_scale = np.nanmin(linear_data_matrix)
-        min_quad_scale = np.nanmin(quad_data_matrix)
-        min_clim = min(min_linear_scale,min_quad_scale)
-        
-        plt.rcParams['text.usetex'] = True
-        plt.rcParams['xtick.labelsize']=16
-        plt.rcParams['ytick.labelsize']=16
-        plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.imshow(quad_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
-        plt.colorbar()
-        plt.clim(min_clim,max_clim)
-        print(f"Saving Plot to {filenames['q']}")
-        plt.savefig(filenames['q'],dpi=300,bbox_inches='tight')
-        print(f"Saved Plot to {filenames['q']}")
-        plt.clf()
-        
-        plt.rcParams['text.usetex'] = True
-        plt.rcParams['xtick.labelsize']=16
-        plt.rcParams['ytick.labelsize']=16
-        plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.imshow(linear_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
-        plt.colorbar()
-        plt.clim(min_clim,max_clim)
-        print(f"Saving Plot to {filenames['l']}")
-        plt.savefig(filenames['l'],dpi=300,bbox_inches='tight')
-        print(f"Saved Plot to {filenames['l']}")
-        plt.clf()
-        
-        plt.rcParams['text.usetex'] = True
-        plt.rcParams['xtick.labelsize']=16
-        plt.rcParams['ytick.labelsize']=16
-        plt.xlabel('$x$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.ylabel('$y$ Position',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.imshow(diff_data_matrix,cmap='viridis',origin='lower',extent=(x_min,x_max,y_min,y_max))
-        plt.colorbar()
-        plt.clim(min_clim,max_clim)
-        print(f"Saving Plot to {filenames['lq']}")
-        plt.savefig(filenames['lq'],dpi=300,bbox_inches='tight')
-        print(f"Saved Plot to {filenames['lq']}")
-        plt.close()
+    start_idx = rank * chunk_size + min(rank, remainder)
+    end_idx = start_idx + chunk_size + (1 if rank < remainder else 0)
     
-    return True
-    
-    if output_coord == (3,4):
-        print("Starting Computation of Plot")
-        #plot complex energy with real along the x axis and imaginary along
-        # the y axis.
-        for x_ind, reE in enumerate(np.linspace(-10,10,num=m,endpoint=True)):
-            for y_ind, imE in enumerate(np.linspace(-1,1,num=m,endpoint=True)):
-                M = m_operator(kappa, x_fixed, y_fixed, complex(reE,imE), X, Y, H)
-                gap, gap_vector = quadratic_gap(M)
-                quad_data_matrix[y_ind,x_ind] = gap
-                vector_data[(x_ind,y_ind)] = gap_vector
-            
-                percentage_complete += 1/(m*m)
-            
-                if percentage_complete > previous_percent:
-                    print(f"Plot {percentage_complete:0.0%} Complete")
-                    previous_percent += 0.1
+    # Process assigned points
+    reE_fixed, imE_fixed = fixed_dim_input[2], fixed_dim_input[3]
+    for idx in range(start_idx, end_idx):
+        i, j = divmod(idx, m)
+        x, y = x_points[i], y_points[j]
         
-        plt.xlabel('$\Re E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
-        plt.ylabel('$\Im E$ Energy',fontdict={'fontsize': 18, 'fontweight': 'medium'})
+        # Quadratic gap calculation
+        M_RQ = m_operator(kappa, x, y, complex(reE_fixed, imE_fixed), X, Y, H)
+        quad_r_gap, _ = quadratic_gap(M_RQ)
+        M_LQ = m_operator(kappa, x, y, complex(reE_fixed, -imE_fixed), X, Y, 
+                         sp.sparse.lil_array.transpose(sp.sparse.lil_array.conj(H)))
+        quad_l_gap, _ = quadratic_gap(M_LQ)
+        quad_gap = min(quad_r_gap, quad_l_gap)
         
-        plt.imshow(quad_data_matrix,cmap='viridis',origin='lower',extent=(-10,10,-1,1),aspect='equal')
-        plt.colorbar()
+        # Linear gap calculation
+        L = clifford_comp(kappa, x, y, complex(reE_fixed, imE_fixed), X, Y, H)
+        linear_gap, _ = clifford_linear_gap(L)
         
-        print(f"Saving Plot to {filenames}")
-        plt.savefig(filenames,dpi=300,bbox_inches='tight')
-        plt.clf()
-        
-        return True
+        # Store results
+        quad_data[i, j] = quad_gap
+        linear_data[i, j] = linear_gap
+        diff_data[i, j] = np.abs(linear_gap - quad_gap)
     
-def plot_spectra(X,Y,H):
-    N = X.shape[0]
-    x_max = max(np.diag(X.toarray()))
-    x_mid = x_max/2
-    num_to_comp = N-1
-    kappa = 0.1
-    x=x_mid
-    y=0
-    E= complex(0,0)
-    L_1 = clifford_comp(kappa, x, y, E, X, Y, H)
-    L_2= clifford_comp_2(kappa, x, y, E, X, Y, H)
-    eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='SM', return_eigenvectors=False)
-    eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='SM', return_eigenvectors=False)
+    # Combine results from all ranks
+    comm.Allreduce(MPI.IN_PLACE, quad_data, op=MPI.SUM)
+    comm.Allreduce(MPI.IN_PLACE, linear_data, op=MPI.SUM)
+    comm.Allreduce(MPI.IN_PLACE, diff_data, op=MPI.SUM)
     
-    ev_1_real = []
-    ev_1_imag = []
-    ev_2_real = []
-    ev_2_imag = []
-    for val in eig_vals_1:
-        ev_1_real.append(val.real)
-        ev_1_imag.append(val.imag)
-        
-    for val in eig_vals_2:
-        ev_2_real.append(val.real)
-        ev_2_imag.append(val.imag)
-    #difference = np.abs(eig_vals_1 - eig_vals_2)
-    
-    plt.figure(1)
-    plt.scatter(ev_1_real,ev_1_imag,label="original")
-    plt.legend()
-    plt.show()
-    plt.figure(2)
-    plt.scatter(ev_2_real,ev_2_imag,label="proposed")
-    plt.legend()
-    plt.show()
-    
-    #plt.scatter(range(0,len(difference)),[val for val in difference],label="difference")
-    #plt.legend()
-    return True
+    return quad_data, linear_data, diff_data
 
-def plot_spectra_H(H):
-    num = X.shape[0]-2
-    eig_vals_1 = sp.sparse.linalg.eigs(H,k=num,which='SM',return_eigenvectors=False)
-    
-    plt.scatter([val.real for val in eig_vals_1],[val.imag for val in eig_vals_1])
-    
-    return True
-
-def compare_gaps(X,Y,H):
-    x_min = min(np.diag(X.toarray()))
-    x_max = max(np.diag(X.toarray()))
-    y_min = min(np.diag(Y.toarray()))
-    y_max = max(np.diag(Y.toarray()))
-    r_e_min = -1
-    r_e_max = 1
-    c_e_min = -1
-    c_e_max = 1
-    #N = X.shape[0]
-    #num_to_comp = int(np.ceil(N/2))
-    #num_to_comp_comp = N-num_to_comp
-    kappa = 0.1
-    #x=0
-    #y=0
-    E= complex(0,0)
-    num = 50
-    gap_diff = np.zeros((num,num))
-    
-    """
-    for i, x in enumerate(np.linspace(x_min,x_max,num=num)):
-        for j, y in enumerate(np.linspace(y_min,y_max,num=num)):
-            L_1 = clifford_comp(kappa, x, y, E, X, Y, H)
-            L_2= clifford_comp_2(kappa, x, y, E, X, Y, H)
-            #eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='LM', return_eigenvectors=False)
-            #eig_vals_1 = eig_vals_1 + sp.sparse.linalg.eigs(L_1,k=num_to_comp_comp,which="SM", return_eigenvectors=False)
-            #eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='LM', return_eigenvectors=False)
-            #eig_vals_2 = eig_vals_2 + sp.sparse.linalg.eigs(L_2, k=num_to_comp_comp,which='SM', return_eigenvectors=False)
-    
-            sing_vals_1 = sp.sparse.linalg.svds(L_1,k=1,which='SM', return_singular_vectors=False)
-            sing_vals_2 = sp.sparse.linalg.svds(L_2,k=1,which='SM', return_singular_vectors=False)
-    
-            gap_1 = sing_vals_1[0]
-            gap_2 = sing_vals_2[0]
-    
-            gap_diff[i,j] = np.abs(gap_1-gap_2)
-            """
-            
-    for i, re_E in enumerate(np.linspace(r_e_min, r_e_max,num=num)):
-        for j, im_E in enumerate(np.linspace(c_e_min, c_e_max,num=num)):
-            L_1 = clifford_comp(kappa, 100, 100, complex(re_E,im_E), X, Y, H)
-            L_2= clifford_comp_2(kappa, 100, 100, complex(re_E,im_E), X, Y, H)
-            #eig_vals_1 = sp.sparse.linalg.eigs(L_1, k=num_to_comp,which='LM', return_eigenvectors=False)
-            #eig_vals_1 = eig_vals_1 + sp.sparse.linalg.eigs(L_1,k=num_to_comp_comp,which="SM", return_eigenvectors=False)
-            #eig_vals_2 = sp.sparse.linalg.eigs(L_2, k=num_to_comp,which='LM', return_eigenvectors=False)
-            #eig_vals_2 = eig_vals_2 + sp.sparse.linalg.eigs(L_2, k=num_to_comp_comp,which='SM', return_eigenvectors=False)
-    
-            sing_vals_1 = sp.sparse.linalg.svds(L_1,k=1,which='SM', return_singular_vectors=False)
-            sing_vals_2 = sp.sparse.linalg.svds(L_2,k=1,which='SM', return_singular_vectors=False)
-    
-            gap_1 = sing_vals_1[0]
-            gap_2 = sing_vals_2[0]
-    
-            gap_diff[i,j] = np.abs(gap_1-gap_2)
-    
-    plt.imshow(gap_diff)
-    
-    return True
     
 if __name__ == '__main__':
     
-    folder_date = str(datetime.datetime.now()).replace(" ", "_")
-    folder_date = folder_date.replace(":","-")
-    folder_date, _ , _ = folder_date.partition('.')
-    newpath = f'{folder_date}' 
-    if not os.path.exists(newpath):
-        os.makedirs(newpath)
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
     
-    X,Y,H = generate_system()
-    
-    #plot_spectra_H(H)
-    #plot_spectra(X, Y, H)
-    #compare_gaps(X,Y,H)
-    
+    # Parse command line arguments
     kappa = 0.5
-    for E in [0,1,complex(0,1)]:
-        x_min = [kappa,0,0,E.real,E.imag]
+    E_values = [0, 1, complex(0,1)]
+    task_id = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    E = E_values[task_id % len(E_values)]
     
-        start_plot = datetime.datetime.now()
+    # Create output directory (rank 0 only)
+    if rank == 0:
+        folder_date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        os.makedirs(folder_date, exist_ok=True)
+    comm.Barrier()
     
-        print(f'Fixing Complex Energy at {x_min[3:5]}')
+    # Generate system (all ranks)
+    X, Y, H = generate_system()
     
-        filename_quad = f'{newpath}/quad_k{kappa}_x_var-y_var-reE{x_min[3]:0.2f}imE{x_min[4]:0.2f}.png'
-        filename_linear = f'{newpath}/linear_k{kappa}_x_var-y_var-reE{x_min[3]:0.2f}imE{x_min[4]:0.2f}.png'
-        filename_diff = f'{newpath}/diff_k{kappa}_x_var-y_var-reE{x_min[3]:0.2f}imE{x_min[4]:0.2f}.png'
-        filename_matrix_save = f'{newpath}/k{kappa}_x_var-y_var-reE{x_min[3]:0.2f}imE{x_min[4]:0.2f}.npz'
-        filenames = {'q': filename_quad, 'l':filename_linear, 'lq': filename_diff, 'save': filename_matrix_save}
-        plot_gap_and_diff(kappa, x_min[1:5], X, Y, H,filenames=filenames,output_coord=(1,2),m=150)
+    # Prepare fixed dimensions
+    x_min = [kappa, 0, 0, E.real, E.imag]
+    fixed_dim_input = x_min[1:5]
+    
+    # Compute gaps in parallel
+    quad_data, linear_data, diff_data = parallel_gap_calculation(
+        kappa, fixed_dim_input, X, Y, H, m=150
+    )
+    
+    # Save results (rank 0 only)
+    if rank == 0:
+        # Generate filenames
+        filename_base = f"{folder_date}/k{kappa}_reE{E.real:0.2f}_imE{E.imag:0.2f}"
+        
+        # Save data
+        np.savez(f"{filename_base}.npz",
+                quad_gap_data=quad_data,
+                linear_gap_data=linear_data,
+                gap_diff_data=diff_data)
 
     
