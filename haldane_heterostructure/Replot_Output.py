@@ -32,8 +32,8 @@ if __name__ == '__main__':
     y_min = min(y_diag)-2
     y_max = max(y_diag)+2
     
-    folder_dir = "2025-07-25_13-48-18/"
-    base = "k0.5_x_var-y_var-reE0.00imE1.00"
+    folder_dir = "2025-08-01_10-14-59/"
+    base = "k0.5_reE0.00_imE0.00"
     
     npz_filename = folder_dir + base + ".npz"
     

@@ -20,7 +20,7 @@ Original code on github:
 from mpi4py import MPI
 import numpy as np
 from haldane_model import haldane_hamiltonian, haldane_positions
-import scipy.sparse as sp
+import scipy as sp
 import datetime
 import matplotlib.pyplot as plt
 import os
@@ -227,14 +227,15 @@ def clifford_linear_gap(L):
     # Following code in comments can be used as an approximation but it is not
     # necessarily reliable.
     # we will assume that min|Re(lambda(L))| approx min|lambda(L)| for computation speed
-    eig_val, gap_vector = sp.sparse.linalg.eigs(L,k=1,which='SM')
-    gap = np.abs(eig_val[0].real)
-    
-    #N_half = int(np.ceil(len(H.toarray())/2))
-    #eig_val, gap_vector = sp.sparse.linalg.eigs(L,k=N_half, which='LR')
+    #eig_val, gap_vector = sp.sparse.linalg.eigs(L,k=1,which='SM')
     #gap = np.abs(eig_val[0].real)
     
-    return gap, gap_vector[:,0]
+    N_half = int(np.ceil(len(H.toarray())/2))
+    eig_val, gap_vector = sp.sparse.linalg.eigs(L,k=N_half, which='LR')
+    gap = np.min(np.abs(np.real(eig_val)))
+    gap_index = np.where(np.real(eig_val)==gap)[0][0]
+    
+    return gap, gap_vector[:,gap_index]
 
 def quadratic_gap(M):
     """
@@ -400,36 +401,19 @@ def parallel_gap_calculation(kappa, fixed_dim_input, X, Y, H, m=100):
     
 if __name__ == '__main__':
     
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    folder_date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    os.makedirs(folder_date, exist_ok=True)
     
-    # Parse command line arguments
+    X, Y, H = generate_system()
     kappa = 0.5
     E_values = [0, 1, complex(0,1)]
-    task_id = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    E = E_values[task_id % len(E_values)]
     
-    # Create output directory (rank 0 only)
-    if rank == 0:
-        folder_date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        os.makedirs(folder_date, exist_ok=True)
-    comm.Barrier()
-    
-    # Generate system (all ranks)
-    X, Y, H = generate_system()
-    
-    # Prepare fixed dimensions
-    x_min = [kappa, 0, 0, E.real, E.imag]
-    fixed_dim_input = x_min[1:5]
-    
-    # Compute gaps in parallel
-    quad_data, linear_data, diff_data = parallel_gap_calculation(
-        kappa, fixed_dim_input, X, Y, H, m=150
-    )
-    
-    # Save results (rank 0 only)
-    if rank == 0:
-        # Generate filenames
+    for E in E_values:
+        x_min = [kappa, 0, 0, E.real, E.imag]
+        fixed_dim_input = x_min[1:5]
+        quad_data, linear_data, diff_data = parallel_gap_calculation(
+            kappa, fixed_dim_input, X, Y, H, m=150
+        )
         filename_base = f"{folder_date}/k{kappa}_reE{E.real:0.2f}_imE{E.imag:0.2f}"
         
         # Save data
