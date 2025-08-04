@@ -449,7 +449,7 @@ def haldane_hamiltonian(N_1, M, t, t_c, phi, mu):
                 H_nnn_A[next_nearest_neighbor_number, site_number] = -t_c[material] \
                 * complex(np.round(np.cos(phi[material]),15),np.round(np.sin(phi[material]),15))
     
-    H += H_nnn_A + H_nnn_A.getH()
+    H += H_nnn_A + H_nnn_A.transpose().conjugate()
 
     # Sum over next nearest neighbor pairs for sites B with a
     # direction-dependent phase factor that breaks time reversal symmetry.
@@ -464,7 +464,7 @@ def haldane_hamiltonian(N_1, M, t, t_c, phi, mu):
             if material == next_nearest_neighbor_material:
                 H_nnn_B[next_nearest_neighbor_number, site_number] = -t_c[material] \
                 * complex(np.round(np.cos(phi[material]),15),np.round(np.sin(phi[material]),15))
-    H += H_nnn_B + H_nnn_B.getH()
+    H += H_nnn_B + H_nnn_B.transpose().conjugate()
     
     return H
 
