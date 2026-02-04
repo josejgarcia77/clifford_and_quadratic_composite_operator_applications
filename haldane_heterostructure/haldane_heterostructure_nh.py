@@ -5,7 +5,7 @@ Created on Sat June 29 2024
 
 Code used to generate the results in
 
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
 
 Authors of Paper: Jose J. Garcia, Alexander Cerjan, and Terry Loring.
@@ -63,7 +63,7 @@ def generate_system():
 
 def clifford_comp(kappa,x,y,E,X,Y,H):
     """
-    Generate the Clifford composite operator with tuning parameter kappa,
+    Generate the non-Hermitian spectral localizer with tuning parameter kappa,
     
     position probe x, energy probe E, position observable X and non-Hermitian
     
@@ -75,12 +75,12 @@ def clifford_comp(kappa,x,y,E,X,Y,H):
     
     Cerjan, Loring (2024). While in the paper by Garcia, Cerjan, Loring(2024)
     
-    it is known as the Clifford composite operator.
+    it is known as the non-Hermitian spectral localizer.
 
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator
+        Tuning parameter for non-Hermitian spectral localizer
     x : float
         X Position probe site.
     y : float
@@ -97,11 +97,11 @@ def clifford_comp(kappa,x,y,E,X,Y,H):
     Returns
     -------
     L : scipy.sparse.lil_array
-        Clifford composite operator.
+        non-Hermitian spectral localizer.
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -130,7 +130,7 @@ def clifford_comp(kappa,x,y,E,X,Y,H):
 
 def clifford_comp_2(kappa,x,y,E,X,Y,H):
     """
-    Generate the Clifford composite operator with tuning parameter kappa,
+    Generate the non-Hermitian spectral localizer with tuning parameter kappa,
     
     position probe x, energy probe E, position observable X and non-Hermitian
     
@@ -142,12 +142,12 @@ def clifford_comp_2(kappa,x,y,E,X,Y,H):
     
     Cerjan, Loring (2024). While in the paper by Garcia, Cerjan, Loring(2024)
     
-    it is known as the Clifford composite operator.
+    it is known as the non-Hermitian spectral localizer.
 
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator
+        Tuning parameter for non-Hermitian spectral localizer
     x : float
         X Position probe site.
     y : float
@@ -164,11 +164,11 @@ def clifford_comp_2(kappa,x,y,E,X,Y,H):
     Returns
     -------
     L : scipy.sparse.lil_array
-        Clifford composite operator.
+        non-Hermitian spectral localizer.
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -208,7 +208,7 @@ def m_operator(kappa,x,y,E,X,Y,H):
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator
+        Tuning parameter for non-Hermitian spectral localizer
     x : float
         X Position probe site.
     y : float
@@ -229,7 +229,7 @@ def m_operator(kappa,x,y,E,X,Y,H):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     """
@@ -252,7 +252,7 @@ def m_operator(kappa,x,y,E,X,Y,H):
     
 def clifford_linear_gap(L):
     """
-    Compute the Clifford linear Clifford composite operator. The following is
+    Compute the Clifford linear non-Hermitian spectral localizer. The following is
     
     computed with Spec being the spectrum of L: $ \min | \Re(\text{Spec}(L))|$.
     
@@ -268,7 +268,7 @@ def clifford_linear_gap(L):
     Parameters
     ----------
     L : numpy.ndarray
-        Clifford composite operator.
+        non-Hermitian spectral localizer.
 
     Returns
     -------
@@ -279,7 +279,7 @@ def clifford_linear_gap(L):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -335,7 +335,7 @@ def quadratic_gap(M):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., Loring, T. A., & Vides, F. (2023). Quadratic pseudospectrum for identifying localized states. 
@@ -360,7 +360,7 @@ def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator and Quadratic
+        Tuning parameter for non-Hermitian spectral localizer and Quadratic
         composite operator
     fixed_dim_input : list or tuple
         Fixed probe site not including kappa.
@@ -395,7 +395,7 @@ def plot_gap_and_diff(kappa,fixed_dim_input, X,Y,H,filenames,output_coord = (1,2
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
