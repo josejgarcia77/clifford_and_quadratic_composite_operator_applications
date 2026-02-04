@@ -5,10 +5,10 @@ Created on Thu Jul 13 09:58:40 2023
 
 Code used to generate the results in
 
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
 
-Authors of Paper: Jose J. Garcia, Alexander Cerjan, and Terry Loring.
+Authors of Paper: Jose J. Garcia
 
 Original code on github:
     
@@ -162,7 +162,7 @@ def gen_system(dg_1,dg_2, c):
         
 def clifford_comp(kappa,x,E,X,H):
     """
-    Generate the Clifford composite operator with tuning parameter kappa,
+    Generate the non-Hermitian spectral localizer with tuning parameter kappa,
     
     position probe x, energy probe E, position observable X and non-Hermitian
     
@@ -172,14 +172,14 @@ def clifford_comp(kappa,x,E,X,H):
     
     localizer in both the papers Cerjan, Koekenbier, Shulz-Baldes (2023) and
     
-    Cerjan, Loring (2024). While in the paper by Garcia, Cerjan, Loring(2024)
+    Cerjan, Loring (2024). While in the paper by Garcia (2024)
     
-    it is known as the Clifford composite operator.
+    it is known as the non-Hermitian spectral localizer.
 
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator
+        Tuning parameter for non-Hermitian spectral localizer
     x : float
         Position probe site.
     E : complex
@@ -192,11 +192,11 @@ def clifford_comp(kappa,x,E,X,H):
     Returns
     -------
     L : numpy.ndarray
-        Clifford composite operator
+        non-Hermitian spectral localizer
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -226,7 +226,7 @@ def m_operator(kappa,x,E,X,H):
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator.
+        Tuning parameter for non-Hermitian spectral localizer.
     x : float
         Position probe site.
     E : complex
@@ -243,7 +243,7 @@ def m_operator(kappa,x,E,X,H):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     """
@@ -260,7 +260,7 @@ def clifford_gap(L,quantity=1):
     
     composite operator. It can also provide computation of the smallest eigenvalue
     
-    and vector of the Clifford composite operator. In order the following are
+    and vector of the non-Hermitian spectral localizer. In order the following are
     
     computed with Spec being the spectrum of L and $\sigma_min$ being the
     
@@ -286,7 +286,7 @@ def clifford_gap(L,quantity=1):
     Parameters
     ----------
     L : numpy.ndarray
-        Clifford composite operator.
+        non-Hermitian spectral localizer.
     quantity : int, optional
         Quantity of interest, quantity = 1 to compute the Clifford radial gap
         and corresponding vector, quantity = 2 to compute the smallest
@@ -302,7 +302,7 @@ def clifford_gap(L,quantity=1):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J.(2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -366,7 +366,7 @@ def quadratic_gap(M):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., Loring, T. A., & Vides, F. (2023). Quadratic pseudospectrum for identifying localized states. 
@@ -395,7 +395,7 @@ def plot_gaps(kappa,fixed_dim_input,X,H,filenames,output_coord = (2,3), m=100):
     Parameters
     ----------
     kappa : float
-        Tuning parameter for Clifford composite operator and Quadratic
+        Tuning parameter for non-Hermitian spectral localizer and Quadratic
         composite operator
     fixed_dim_input : list or tuple
         Fixed probe site not including kappa.
@@ -428,7 +428,7 @@ def plot_gaps(kappa,fixed_dim_input,X,H,filenames,output_coord = (2,3), m=100):
         
     References
     ----------
-    Garcia, J. J., Cerjan, A., & Loring, T. A. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
+    Garcia, J. J. (2024). Clifford and quadratic composite operators with applications to non-Hermitian physics. 
     arXiv:2410.03880. https://arxiv.org/abs/2410.03880
     
     Cerjan, A., & Loring, T. A. (2024). Classifying photonic topology using the spectral localizer and numerical K-theory. 
@@ -749,9 +749,9 @@ def plot_tls_lattice(filename=None):
     
     Note: In the paper by Cerjan, Loring, Vides (2023) the quadratic operator
     
-    is defined for Hermitian systems while in the paper by Garcia, Cerjan,
+    is defined for Hermitian systems while in the paper by Garcia (2024)
     
-    Loring(2024) the quadratic operator is defined for non-Hermitian physical
+    the quadratic operator is defined for non-Hermitian physical
     
     systems. In both scenarios the corresponding M operator, the construction
     
